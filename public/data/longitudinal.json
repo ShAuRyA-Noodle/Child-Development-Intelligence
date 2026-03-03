@@ -1,0 +1,149 @@
+{
+  "risk_trend": [
+    {
+      "month": "Baseline",
+      "high_risk_pct": 1.0,
+      "medium_risk_pct": 29.3,
+      "low_risk_pct": 69.7
+    },
+    {
+      "month": "Month 1",
+      "high_risk_pct": 1,
+      "medium_risk_pct": 27.0,
+      "low_risk_pct": 72.0
+    },
+    {
+      "month": "Month 2",
+      "high_risk_pct": 1,
+      "medium_risk_pct": 24.8,
+      "low_risk_pct": 74.2
+    },
+    {
+      "month": "Month 3",
+      "high_risk_pct": 1,
+      "medium_risk_pct": 22.8,
+      "low_risk_pct": 76.2
+    },
+    {
+      "month": "Month 4",
+      "high_risk_pct": 1,
+      "medium_risk_pct": 21.0,
+      "low_risk_pct": 78.0
+    },
+    {
+      "month": "Month 5",
+      "high_risk_pct": 1,
+      "medium_risk_pct": 19.3,
+      "low_risk_pct": 79.7
+    },
+    {
+      "month": "Month 6",
+      "high_risk_pct": 1,
+      "medium_risk_pct": 17.8,
+      "low_risk_pct": 81.2
+    }
+  ],
+  "domain_trajectory": [
+    {
+      "month": "Baseline",
+      "Gross Motor": 94.8,
+      "Fine Motor": 95.3,
+      "Language": 95.0,
+      "Cognitive": 94.7,
+      "Socio-Emotional": 94.7
+    },
+    {
+      "month": "Month 1",
+      "Gross Motor": 96.3,
+      "Fine Motor": 96.8,
+      "Language": 96.5,
+      "Cognitive": 96.2,
+      "Socio-Emotional": 96.2
+    },
+    {
+      "month": "Month 2",
+      "Gross Motor": 97.8,
+      "Fine Motor": 98.3,
+      "Language": 98.0,
+      "Cognitive": 97.7,
+      "Socio-Emotional": 97.7
+    },
+    {
+      "month": "Month 3",
+      "Gross Motor": 99.3,
+      "Fine Motor": 99.8,
+      "Language": 99.5,
+      "Cognitive": 99.2,
+      "Socio-Emotional": 99.2
+    },
+    {
+      "month": "Month 4",
+      "Gross Motor": 100.8,
+      "Fine Motor": 101.3,
+      "Language": 101.0,
+      "Cognitive": 100.7,
+      "Socio-Emotional": 100.7
+    },
+    {
+      "month": "Month 5",
+      "Gross Motor": 102.3,
+      "Fine Motor": 102.8,
+      "Language": 102.5,
+      "Cognitive": 102.2,
+      "Socio-Emotional": 102.2
+    },
+    {
+      "month": "Month 6",
+      "Gross Motor": 103.8,
+      "Fine Motor": 104.3,
+      "Language": 104.0,
+      "Cognitive": 103.7,
+      "Socio-Emotional": 103.7
+    }
+  ],
+  "intervention_comparison": [
+    {
+      "month": "Baseline",
+      "with_intervention": 95.0,
+      "without_intervention": 94.8
+    },
+    {
+      "month": "Month 1",
+      "with_intervention": 97.5,
+      "without_intervention": 94.3
+    },
+    {
+      "month": "Month 2",
+      "with_intervention": 100.0,
+      "without_intervention": 93.8
+    },
+    {
+      "month": "Month 3",
+      "with_intervention": 102.5,
+      "without_intervention": 93.3
+    },
+    {
+      "month": "Month 4",
+      "with_intervention": 105.0,
+      "without_intervention": 92.8
+    },
+    {
+      "month": "Month 5",
+      "with_intervention": 107.5,
+      "without_intervention": 92.3
+    },
+    {
+      "month": "Month 6",
+      "with_intervention": 110.0,
+      "without_intervention": 91.8
+    }
+  ],
+  "cohort_analytics": {
+    "improved_pct": 47.2,
+    "same_pct": 43.0,
+    "worsened_pct": 9.8,
+    "avg_delay_reduction_months": 2.5,
+    "domain_improvement_pct": 40.9,
+    "exit_high_risk_pct": 14.6
+  }
+}

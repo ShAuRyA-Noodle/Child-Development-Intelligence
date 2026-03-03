@@ -1,0 +1,187 @@
+{
+  "kpi": {
+    "total_children": 1000,
+    "high_risk": 10,
+    "medium_risk": 293,
+    "low_risk": 697,
+    "intervention_active": 431,
+    "followup_done": 294,
+    "improved": 472,
+    "high_risk_pct": 1.0,
+    "medium_risk_pct": 29.3,
+    "low_risk_pct": 69.7
+  },
+  "mandals": [
+    {
+      "total": 359,
+      "high_risk": 2,
+      "medium_risk": 107,
+      "low_risk": 250,
+      "avg_composite_dq": 94.9,
+      "referral_pending": 192,
+      "intervention_active": 152,
+      "improved": 167,
+      "mandal": "Mandal_A"
+    },
+    {
+      "total": 319,
+      "high_risk": 6,
+      "medium_risk": 91,
+      "low_risk": 222,
+      "avg_composite_dq": 95.2,
+      "referral_pending": 160,
+      "intervention_active": 135,
+      "improved": 148,
+      "mandal": "Mandal_B"
+    },
+    {
+      "total": 322,
+      "high_risk": 2,
+      "medium_risk": 95,
+      "low_risk": 225,
+      "avg_composite_dq": 94.5,
+      "referral_pending": 161,
+      "intervention_active": 144,
+      "improved": 157,
+      "mandal": "Mandal_C"
+    }
+  ],
+  "districts": [
+    {
+      "total": 255,
+      "high_risk": 0,
+      "medium_risk": 66,
+      "low_risk": 189,
+      "district": "Chittoor"
+    },
+    {
+      "total": 257,
+      "high_risk": 2,
+      "medium_risk": 74,
+      "low_risk": 181,
+      "district": "Eluru"
+    },
+    {
+      "total": 234,
+      "high_risk": 4,
+      "medium_risk": 69,
+      "low_risk": 161,
+      "district": "Guntur"
+    },
+    {
+      "total": 254,
+      "high_risk": 4,
+      "medium_risk": 84,
+      "low_risk": 166,
+      "district": "Visakhapatnam"
+    }
+  ],
+  "top_awc": [
+    {
+      "awc_code": 1138,
+      "mandal": "Mandal_A",
+      "district": "Eluru",
+      "total_children": 1,
+      "impact_score": 100.0,
+      "improved": 1,
+      "followup_rate": 100.0
+    },
+    {
+      "awc_code": 1009,
+      "mandal": "Mandal_A",
+      "district": "Visakhapatnam",
+      "total_children": 3,
+      "impact_score": 90.0,
+      "improved": 3,
+      "followup_rate": 66.7
+    },
+    {
+      "awc_code": 1089,
+      "mandal": "Mandal_C",
+      "district": "Chittoor",
+      "total_children": 3,
+      "impact_score": 83.3,
+      "improved": 3,
+      "followup_rate": 66.7
+    },
+    {
+      "awc_code": 1020,
+      "mandal": "Mandal_C",
+      "district": "Visakhapatnam",
+      "total_children": 1,
+      "impact_score": 80.0,
+      "improved": 1,
+      "followup_rate": 100.0
+    },
+    {
+      "awc_code": 1146,
+      "mandal": "Mandal_B",
+      "district": "Visakhapatnam",
+      "total_children": 2,
+      "impact_score": 80.0,
+      "improved": 1,
+      "followup_rate": 100.0
+    },
+    {
+      "awc_code": 1108,
+      "mandal": "Mandal_C",
+      "district": "Eluru",
+      "total_children": 6,
+      "impact_score": 75.0,
+      "improved": 6,
+      "followup_rate": 50.0
+    },
+    {
+      "awc_code": 1073,
+      "mandal": "Mandal_C",
+      "district": "Eluru",
+      "total_children": 3,
+      "impact_score": 73.3,
+      "improved": 3,
+      "followup_rate": 33.3
+    },
+    {
+      "awc_code": 1016,
+      "mandal": "Mandal_B",
+      "district": "Eluru",
+      "total_children": 5,
+      "impact_score": 72.0,
+      "improved": 4,
+      "followup_rate": 60.0
+    },
+    {
+      "awc_code": 1027,
+      "mandal": "Mandal_A",
+      "district": "Guntur",
+      "total_children": 5,
+      "impact_score": 72.0,
+      "improved": 4,
+      "followup_rate": 60.0
+    },
+    {
+      "awc_code": 1001,
+      "mandal": "Mandal_C",
+      "district": "Visakhapatnam",
+      "total_children": 2,
+      "impact_score": 70.0,
+      "improved": 1,
+      "followup_rate": 100.0
+    }
+  ],
+  "engagement": {
+    "avg_parent_interaction": 4.9,
+    "avg_home_stimulation": 4.9,
+    "play_materials_pct": 69.5,
+    "adequate_language_pct": 79.7,
+    "safe_water_pct": 79.9,
+    "toilet_facility_pct": 74.2,
+    "followup_rate": 29.4,
+    "home_activity_completion": 45.0
+  },
+  "field_performance": {
+    "visit_compliance": 29.4,
+    "intervention_coverage": 43.1,
+    "referral_completion": 113.7,
+    "risk_closure_rate": 48.2
+  }
+}
