@@ -1,0 +1,117 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL Database ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ecd_platform
+      POSTGRES_USER: ecd_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ecd_secure_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docs/schema_v2.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecd_admin -d ecd_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis (Queue + Cache) ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ecd-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend API Server (Fastify + TypeScript) ────────────────────────────
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ecd-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ecd_admin:${DB_PASSWORD:-ecd_secure_password}@postgres:5432/ecd_platform
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_this_in_production_immediately}
+      JWT_EXPIRY: 15m
+      REFRESH_TOKEN_EXPIRY: 7d
+      PORT: 3001
+      RISK_ENGINE_URL: http://risk-engine:8000
+      NODE_ENV: production
+      # Notification service configs (set in .env)
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+      WHATSAPP_PHONE_ID: ${WHATSAPP_PHONE_ID:-}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      SMS_GATEWAY_URL: ${SMS_GATEWAY_URL:-}
+      SMS_AUTH_KEY: ${SMS_AUTH_KEY:-}
+      SMS_FLOW_ID: ${SMS_FLOW_ID:-}
+      SMS_SENDER_ID: ${SMS_SENDER_ID:-ECDGOV}
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ─── Risk Engine (FastAPI + Python) ───────────────────────────────────────
+  risk-engine:
+    build:
+      context: ./risk-engine
+      dockerfile: Dockerfile
+    container_name: ecd-risk-engine
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ecd_admin:${DB_PASSWORD:-ecd_secure_password}@postgres:5432/ecd_platform
+      REDIS_URL: redis://redis:6379
+      MODEL_PATH: /app/models
+      LOG_LEVEL: info
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ─── Frontend (Vite build served by nginx) ────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: ecd-frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

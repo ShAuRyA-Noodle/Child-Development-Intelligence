@@ -1,0 +1,637 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// 1. ROLE-BASED ACCESS CONTROL (RBAC)
+// =============================================
+
+enum UserRole {
+  AWW
+  Supervisor
+  CDPO
+  StateAdmin
+  HealthWorker
+}
+
+model User {
+  userId       String   @id @default(uuid()) @map("user_id") @db.Uuid
+  username     String   @unique @db.VarChar(100)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  fullName     String?  @map("full_name") @db.VarChar(150)
+  role         UserRole
+  email        String?  @unique @db.VarChar(255)
+  phone        String?  @db.VarChar(20)
+  isActive     Boolean  @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login") @db.Timestamptz()
+  refreshToken String?  @map("refresh_token") @db.VarChar(512)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  locations     UserLocation[]
+  assessments   Assessment[]
+  resolvedAlerts IntelligentAlert[] @relation("AlertResolver")
+  referrals     Referral[]
+  syncLogs      SyncLog[]
+  auditTrails   AuditTrail[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Location {
+  locationId       Int       @id @default(autoincrement()) @map("location_id")
+  level            String    @db.VarChar(50)
+  parentLocationId Int?      @map("parent_location_id")
+  name             String    @db.VarChar(150)
+  code             String?   @unique @db.VarChar(50)
+
+  parent   Location?  @relation("LocationHierarchy", fields: [parentLocationId], references: [locationId])
+  children Location[] @relation("LocationHierarchy")
+
+  userLocations UserLocation[]
+  childrenAtAwc Child[]
+
+  @@map("locations")
+}
+
+model UserLocation {
+  userId         String   @map("user_id") @db.Uuid
+  locationId     Int      @map("location_id")
+  assignmentDate DateTime @default(now()) @map("assignment_date") @db.Timestamptz()
+
+  user     User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+
+  @@id([userId, locationId])
+  @@map("user_locations")
+}
+
+// =============================================
+// 2. CORE REGISTRY (CHILD & CAREGIVERS)
+// =============================================
+
+model Caregiver {
+  caregiverId     String   @id @default(uuid()) @map("caregiver_id") @db.Uuid
+  primaryName     String   @map("primary_name") @db.VarChar(150)
+  relation        String?  @db.VarChar(50)
+  contactNumber   String?  @map("contact_number") @db.VarChar(20)
+  educationLevel  String?  @map("education_level") @db.VarChar(100)
+  primaryLanguage String   @default("Telugu") @map("primary_language") @db.VarChar(50)
+  consentGiven    Boolean  @default(false) @map("consent_given")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  children     Child[]
+  interactions CaregiverInteraction[]
+  consents     ConsentRecord[]
+
+  @@map("caregivers")
+}
+
+model Child {
+  childId          String   @id @map("child_id") @db.VarChar(50)
+  firstName        String?  @map("first_name") @db.VarChar(100)
+  lastName         String?  @map("last_name") @db.VarChar(100)
+  gender           String?  @db.VarChar(10)
+  dob              DateTime @db.Date
+  registrationDate DateTime @default(now()) @map("registration_date") @db.Date
+  birthWeightKg    Decimal? @map("birth_weight_kg") @db.Decimal(5, 2)
+  birthStatus      String?  @map("birth_status") @db.VarChar(50)
+  caregiverId      String?  @map("caregiver_id") @db.Uuid
+  awcId            Int?     @map("awc_id")
+  isActive         Boolean  @default(true) @map("is_active")
+
+  // Demographic fields for bias auditing
+  socialCategory      String? @map("social_category") @db.VarChar(30)
+  maternalEducation   String? @map("maternal_education") @db.VarChar(50)
+  paternalEducation   String? @map("paternal_education") @db.VarChar(50)
+  householdIncomeBand String? @map("household_income_band") @db.VarChar(30)
+  rationCardType      String? @map("ration_card_type") @db.VarChar(30)
+
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  caregiver  Caregiver? @relation(fields: [caregiverId], references: [caregiverId])
+  awc        Location?  @relation(fields: [awcId], references: [locationId])
+
+  assessments        Assessment[]
+  riskProfiles       RiskProfile[]
+  alerts             IntelligentAlert[]
+  interventionPlans  InterventionPlan[]
+  referrals          Referral[]
+  milestones         MilestoneAchievement[]
+  growthRecords      GrowthRecord[]
+  syncMutations      SyncMutation[]
+
+  @@index([awcId])
+  @@map("children")
+}
+
+// =============================================
+// 3. ASSESSMENT & SCORING MODULE
+// =============================================
+
+model Assessment {
+  assessmentId        String   @id @default(uuid()) @map("assessment_id") @db.Uuid
+  childId             String   @map("child_id") @db.VarChar(50)
+  assessorId          String?  @map("assessor_id") @db.Uuid
+  assessmentDate      DateTime @map("assessment_date") @db.Date
+  assessmentCycle     String?  @map("assessment_cycle") @db.VarChar(50)
+  ageAtAssessmentMonths Int    @map("age_at_assessment_months")
+
+  heightCm            Decimal? @map("height_cm") @db.Decimal(5, 2)
+  weightKg            Decimal? @map("weight_kg") @db.Decimal(5, 2)
+  muacCm              Decimal? @map("muac_cm") @db.Decimal(5, 2)
+
+  gmDq                Decimal? @map("gm_dq") @db.Decimal(6, 2)
+  fmDq                Decimal? @map("fm_dq") @db.Decimal(6, 2)
+  lcDq                Decimal? @map("lc_dq") @db.Decimal(6, 2)
+  cogDq               Decimal? @map("cog_dq") @db.Decimal(6, 2)
+  seDq                Decimal? @map("se_dq") @db.Decimal(6, 2)
+  compositeDq         Decimal? @map("composite_dq") @db.Decimal(6, 2)
+
+  gmDelay             Int      @default(0) @map("gm_delay")
+  fmDelay             Int      @default(0) @map("fm_delay")
+  lcDelay             Int      @default(0) @map("lc_delay")
+  cogDelay            Int      @default(0) @map("cog_delay")
+  seDelay             Int      @default(0) @map("se_delay")
+  numDelays           Int      @default(0) @map("num_delays")
+
+  autismRisk          String?  @map("autism_risk") @db.VarChar(50)
+  adhdRisk            String?  @map("adhd_risk") @db.VarChar(50)
+  behaviorRisk        String?  @map("behavior_risk") @db.VarChar(50)
+  behaviourScore      Int      @default(0) @map("behaviour_score")
+
+  underweight         Int      @default(0)
+  stunting            Int      @default(0)
+  wasting             Int      @default(0)
+  anemia              Int      @default(0)
+  nutritionScore      Int      @default(0) @map("nutrition_score")
+  nutritionRisk       String?  @map("nutrition_risk") @db.VarChar(50)
+
+  clinicalObservations String? @map("clinical_observations")
+
+  // v2 environmental risk factors
+  homeStimulationScore   Int  @default(5) @map("home_stimulation_score")
+  parentMentalHealthScore Int @default(5) @map("parent_mental_health_score")
+  caregiverEngagement    String? @map("caregiver_engagement") @db.VarChar(20)
+  languageExposure       String? @map("language_exposure") @db.VarChar(30)
+
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  child       Child        @relation(fields: [childId], references: [childId], onDelete: Cascade)
+  assessor    User?        @relation(fields: [assessorId], references: [userId])
+  riskProfile RiskProfile?
+  interventionPlans InterventionPlan[]
+
+  @@index([childId])
+  @@map("assessments")
+}
+
+model RiskProfile {
+  riskId               String   @id @default(uuid()) @map("risk_id") @db.Uuid
+  childId              String   @map("child_id") @db.VarChar(50)
+  assessmentId         String?  @unique @map("assessment_id") @db.Uuid
+  computedRiskScore    Decimal  @map("computed_risk_score") @db.Decimal(5, 2)
+  riskCategory         String?  @map("risk_category") @db.VarChar(20)
+  confidenceScore      Decimal? @map("confidence_score") @db.Decimal(5, 2)
+  numDelays            Int      @default(0) @map("num_delays")
+  contributingDomains  Json?    @map("contributing_domains")
+  improvementStatus    String?  @map("improvement_status") @db.VarChar(50)
+  reductionInDelayMonths Int    @default(0) @map("reduction_in_delay_months")
+  calculationDate      DateTime @default(now()) @map("calculation_date") @db.Timestamptz()
+
+  // v2 dual scoring fields
+  oldScore             Int?     @map("old_score")
+  oldCategory          String?  @map("old_category") @db.VarChar(20)
+  formulaVersion       String   @default("v2_recalibrated") @map("formula_version") @db.VarChar(30)
+  activeFormula        String   @default("v1") @map("active_formula") @db.VarChar(10)
+
+  // WHO z-scores
+  waz                  Decimal? @db.Decimal(5, 2)
+  haz                  Decimal? @db.Decimal(5, 2)
+  whz                  Decimal? @db.Decimal(5, 2)
+  muacZscore           Decimal? @map("muac_zscore") @db.Decimal(5, 2)
+  whoNutritionRisk     String?  @map("who_nutrition_risk") @db.VarChar(30)
+
+  child      Child       @relation(fields: [childId], references: [childId], onDelete: Cascade)
+  assessment Assessment? @relation(fields: [assessmentId], references: [assessmentId])
+  decisions  RiskDecisionLog[]
+
+  @@index([riskCategory])
+  @@map("risk_profiles")
+}
+
+// =============================================
+// 4. ALERTS & INTELLIGENCE
+// =============================================
+
+enum SeverityLevel {
+  critical
+  high
+  moderate
+  low
+}
+
+enum AlertStatus {
+  active
+  acknowledged
+  resolved
+}
+
+model IntelligentAlert {
+  alertId      String       @id @default(uuid()) @map("alert_id") @db.Uuid
+  childId      String?      @map("child_id") @db.VarChar(50)
+  domain       String       @db.VarChar(100)
+  indicator    String       @db.VarChar(200)
+  severity     SeverityLevel
+  confidencePct Int?        @map("confidence_pct")
+  dqValue      Decimal?     @map("dq_value") @db.Decimal(6, 2)
+  message      String
+  suggestedAction String?   @map("suggested_action")
+  status       AlertStatus  @default(active)
+  generatedAt  DateTime     @default(now()) @map("generated_at") @db.Timestamptz()
+  resolvedAt   DateTime?    @map("resolved_at") @db.Timestamptz()
+  resolvedBy   String?      @map("resolved_by") @db.Uuid
+
+  child    Child? @relation(fields: [childId], references: [childId])
+  resolver User?  @relation("AlertResolver", fields: [resolvedBy], references: [userId])
+
+  @@index([status])
+  @@map("intelligent_alerts")
+}
+
+// =============================================
+// 5. INTERVENTION PLAN ENGINE
+// =============================================
+
+model InterventionPlan {
+  planId                  String   @id @default(uuid()) @map("plan_id") @db.Uuid
+  childId                 String   @map("child_id") @db.VarChar(50)
+  generatedFromAssessmentId String? @map("generated_from_assessment_id") @db.Uuid
+  status                  String   @default("Draft") @db.VarChar(50)
+  startDate               DateTime? @map("start_date") @db.Date
+  endDate                 DateTime? @map("end_date") @db.Date
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  child      Child       @relation(fields: [childId], references: [childId], onDelete: Cascade)
+  assessment Assessment? @relation(fields: [generatedFromAssessmentId], references: [assessmentId])
+  activities PlanActivity[]
+  compliance InterventionCompliance[]
+
+  @@map("intervention_plans")
+}
+
+model PlanActivity {
+  activityId     String    @id @default(uuid()) @map("activity_id") @db.Uuid
+  planId         String    @map("plan_id") @db.Uuid
+  domain         String    @db.VarChar(100)
+  activityName   String    @map("activity_name") @db.VarChar(255)
+  frequency      String?   @db.VarChar(100)
+  durationMinutes Int?     @map("duration_minutes")
+  caregiverFormat String?  @map("caregiver_format") @db.VarChar(100)
+  priority       Int       @default(1)
+  rationale      String?
+  isCompleted    Boolean   @default(false) @map("is_completed")
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz()
+
+  plan InterventionPlan @relation(fields: [planId], references: [planId], onDelete: Cascade)
+
+  @@map("plan_activities")
+}
+
+model Referral {
+  referralId   String   @id @default(uuid()) @map("referral_id") @db.Uuid
+  childId      String   @map("child_id") @db.VarChar(50)
+  referredBy   String?  @map("referred_by") @db.Uuid
+  referralType String?  @map("referral_type") @db.VarChar(100)
+  reason       String
+  status       String   @default("Pending") @db.VarChar(50)
+  referralDate DateTime @default(now()) @map("referral_date") @db.Date
+  followupDate DateTime? @map("followup_date") @db.Date
+
+  child    Child @relation(fields: [childId], references: [childId])
+  referrer User? @relation(fields: [referredBy], references: [userId])
+
+  @@map("referrals")
+}
+
+// =============================================
+// 6. NEW TABLES
+// =============================================
+
+model MilestoneNorm {
+  normId        String @id @default(uuid()) @map("norm_id") @db.Uuid
+  domain        String @db.VarChar(100)
+  milestoneDesc String @map("milestone_desc") @db.VarChar(500)
+  ageMinMonths  Int    @map("age_min_months")
+  ageMaxMonths  Int    @map("age_max_months")
+  source        String @default("WHO") @db.VarChar(100)
+
+  achievements MilestoneAchievement[]
+
+  @@map("milestone_norms")
+}
+
+model MilestoneAchievement {
+  achievementId String   @id @default(uuid()) @map("achievement_id") @db.Uuid
+  childId       String   @map("child_id") @db.VarChar(50)
+  normId        String   @map("norm_id") @db.Uuid
+  achieved      Boolean  @default(false)
+  achievedDate  DateTime? @map("achieved_date") @db.Date
+  notes         String?
+  recordedAt    DateTime @default(now()) @map("recorded_at") @db.Timestamptz()
+
+  child Child         @relation(fields: [childId], references: [childId], onDelete: Cascade)
+  norm  MilestoneNorm @relation(fields: [normId], references: [normId])
+
+  @@map("milestone_achievements")
+}
+
+model GrowthRecord {
+  recordId  String   @id @default(uuid()) @map("record_id") @db.Uuid
+  childId   String   @map("child_id") @db.VarChar(50)
+  recordDate DateTime @map("record_date") @db.Date
+  heightCm  Decimal? @map("height_cm") @db.Decimal(5, 2)
+  weightKg  Decimal? @map("weight_kg") @db.Decimal(5, 2)
+  muacCm    Decimal? @map("muac_cm") @db.Decimal(5, 2)
+  hcCm      Decimal? @map("hc_cm") @db.Decimal(5, 2)
+  wazScore         Decimal? @map("waz_score") @db.Decimal(5, 2)
+  hazScore         Decimal? @map("haz_score") @db.Decimal(5, 2)
+  whzScore         Decimal? @map("whz_score") @db.Decimal(5, 2)
+  muacZscore       Decimal? @map("muac_zscore") @db.Decimal(5, 2)
+  whoNutritionRisk String?  @map("who_nutrition_risk") @db.VarChar(30)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  child Child @relation(fields: [childId], references: [childId], onDelete: Cascade)
+
+  @@map("growth_records")
+}
+
+model SyncLog {
+  syncId       String   @id @default(uuid()) @map("sync_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  syncType     String   @map("sync_type") @db.VarChar(20) // push, pull, full
+  syncStart    DateTime @map("sync_start") @db.Timestamptz()
+  syncEnd      DateTime? @map("sync_end") @db.Timestamptz()
+  recordsPushed Int     @default(0) @map("records_pushed")
+  recordsPulled Int     @default(0) @map("records_pulled")
+  conflicts    Int      @default(0)
+  status       String   @default("in_progress") @db.VarChar(50)
+  errorMessage String?  @map("error_message")
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("sync_logs")
+}
+
+model SyncMutation {
+  mutationId  String   @id @default(uuid()) @map("mutation_id") @db.Uuid
+  childId     String?  @map("child_id") @db.VarChar(50)
+  tableName   String   @map("table_name") @db.VarChar(100)
+  operation   String   @db.VarChar(20) // INSERT, UPDATE, DELETE
+  payload     Json
+  clientTs    DateTime @map("client_ts") @db.Timestamptz()
+  serverTs    DateTime? @map("server_ts") @db.Timestamptz()
+  applied     Boolean  @default(false)
+  conflictResolution String? @map("conflict_resolution") @db.VarChar(50)
+
+  child Child? @relation(fields: [childId], references: [childId])
+
+  @@map("sync_mutations")
+}
+
+model AuditTrail {
+  auditId    String   @id @default(uuid()) @map("audit_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  tableName  String   @map("table_name") @db.VarChar(100)
+  recordId   String   @map("record_id") @db.VarChar(100)
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.VarChar(500)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User? @relation(fields: [userId], references: [userId])
+
+  @@map("audit_trails")
+}
+
+model ConsentRecord {
+  consentId   String   @id @default(uuid()) @map("consent_id") @db.Uuid
+  caregiverId String   @map("caregiver_id") @db.Uuid
+  consentType String   @map("consent_type") @db.VarChar(100)
+  granted     Boolean  @default(false)
+  grantedAt   DateTime? @map("granted_at") @db.Timestamptz()
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz()
+  documentUrl String?  @map("document_url") @db.VarChar(500)
+
+  caregiver Caregiver @relation(fields: [caregiverId], references: [caregiverId])
+
+  @@map("consent_records")
+}
+
+model ContentLibrary {
+  contentId   String   @id @default(uuid()) @map("content_id") @db.Uuid
+  domain      String   @db.VarChar(100)
+  title       String   @db.VarChar(255)
+  description String?
+  contentType String   @map("content_type") @db.VarChar(50) // video, audio, infographic, text
+  contentUrl  String   @map("content_url") @db.VarChar(500)
+  language    String   @default("Telugu") @db.VarChar(50)
+  ageMinMonths Int?    @map("age_min_months")
+  ageMaxMonths Int?    @map("age_max_months")
+  tags        String[] @default([])
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("content_library")
+}
+
+model CaregiverInteraction {
+  interactionId String   @id @default(uuid()) @map("interaction_id") @db.Uuid
+  caregiverId   String   @map("caregiver_id") @db.Uuid
+  interactionType String @map("interaction_type") @db.VarChar(100) // home_visit, phone_call, group_session
+  notes         String?
+  satisfaction  Int?     // 1-5 rating
+  contentViewed String[] @default([]) @map("content_viewed")
+  interactionDate DateTime @map("interaction_date") @db.Timestamptz()
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  caregiver Caregiver @relation(fields: [caregiverId], references: [caregiverId])
+
+  @@map("caregiver_interactions")
+}
+
+model InterventionCompliance {
+  complianceId String   @id @default(uuid()) @map("compliance_id") @db.Uuid
+  planId       String   @map("plan_id") @db.Uuid
+  activityDate DateTime @map("activity_date") @db.Date
+  completed    Boolean  @default(false)
+  duration     Int?     // minutes actually spent
+  notes        String?
+  recordedAt   DateTime @default(now()) @map("recorded_at") @db.Timestamptz()
+
+  plan InterventionPlan @relation(fields: [planId], references: [planId], onDelete: Cascade)
+
+  @@map("intervention_compliance")
+}
+
+model RiskDecisionLog {
+  logId         String   @id @default(uuid()) @map("log_id") @db.Uuid
+  riskProfileId String   @map("risk_profile_id") @db.Uuid
+  ruleScore     Decimal  @map("rule_score") @db.Decimal(5, 2)
+  mlScore       Decimal? @map("ml_score") @db.Decimal(5, 2)
+  hybridScore   Decimal? @map("hybrid_score") @db.Decimal(5, 2)
+  alpha         Decimal? @db.Decimal(3, 2)
+  overrides     Json?
+  reasoning     String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  riskProfile RiskProfile @relation(fields: [riskProfileId], references: [riskId])
+
+  @@map("risk_decision_logs")
+}
+
+// =============================================
+// 7. M-CHAT-R/F AUTISM SCREENING (Task 5)
+// =============================================
+
+model MChatAssessment {
+  id                String   @id @default(uuid()) @db.Uuid
+  childId           String   @map("child_id") @db.VarChar(50)
+  assessmentId      String?  @map("assessment_id") @db.Uuid
+  itemResponses     Json     @map("item_responses")
+  totalScore        Int      @map("total_score")
+  criticalFails     Int      @map("critical_fails")
+  riskLevel         String   @map("risk_level") @db.VarChar(20)
+  followupRequired  Boolean  @default(false) @map("followup_required")
+  followupConducted Boolean  @default(false) @map("followup_conducted")
+  followupScore     Int?     @map("followup_score")
+  followupRiskLevel String?  @map("followup_risk_level") @db.VarChar(20)
+  assessedAt        DateTime @map("assessed_at") @db.Timestamptz()
+  assessorId        String?  @map("assessor_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([childId])
+  @@map("mchat_assessments")
+}
+
+// =============================================
+// 8. BIAS AUDIT (Task 6)
+// =============================================
+
+model BiasAuditLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  auditDate           DateTime @map("audit_date") @db.Date
+  subgroupType        String   @map("subgroup_type") @db.VarChar(50)
+  subgroupValue       String   @map("subgroup_value") @db.VarChar(100)
+  nChildren           Int      @map("n_children")
+  nAtRisk             Int      @map("n_at_risk")
+  sensitivity         Float
+  specificity         Float?
+  deviationFromOverall Float   @map("deviation_from_overall")
+  alertTriggered      Boolean  @default(false) @map("alert_triggered")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("bias_audit_logs")
+}
+
+// =============================================
+// 9. DEIC GROUND TRUTH LINKAGE (Task 7)
+// =============================================
+
+model DeicOutcome {
+  id                         String   @id @default(uuid()) @db.Uuid
+  childId                    String   @unique @map("child_id") @db.VarChar(50)
+  referralId                 String?  @map("referral_id") @db.Uuid
+  deicAssessmentDate         DateTime @map("deic_assessment_date") @db.Date
+  clinicalDiagnosis          String?  @map("clinical_diagnosis")
+  clinicalRiskLevel          String   @map("clinical_risk_level") @db.VarChar(20)
+  clinicalDomains            String[] @map("clinical_domains")
+  platformScoreAtReferral    Int      @map("platform_score_at_referral")
+  platformCategoryAtReferral String   @map("platform_category_at_referral") @db.VarChar(20)
+  concordance                Boolean
+  falseNegative              Boolean  @default(false) @map("false_negative")
+  falsePositive              Boolean  @default(false) @map("false_positive")
+  enteredBy                  String   @map("entered_by") @db.Uuid
+  notes                      String?
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("deic_outcomes")
+}
+
+model ValidationClaim {
+  id              String    @id @default(uuid()) @db.Uuid
+  claim           String
+  metricValue     Float?    @map("metric_value")
+  evidenceSource  String    @map("evidence_source") @db.VarChar(50)
+  sampleSize      Int       @map("sample_size")
+  confidenceLevel String    @map("confidence_level") @db.VarChar(30)
+  validFrom       DateTime  @map("valid_from") @db.Date
+  validUntil      DateTime? @map("valid_until") @db.Date
+  approvedBy      String?   @map("approved_by") @db.Uuid
+  modelVersion    String    @map("model_version") @db.VarChar(50)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("validation_claims")
+}
+
+// =============================================
+// 10. INTER-RATER RELIABILITY (Task 8)
+// =============================================
+
+model ReliabilityAssessment {
+  id              String   @id @default(uuid()) @db.Uuid
+  childId         String   @map("child_id") @db.VarChar(50)
+  assessor1Id     String   @map("assessor1_id") @db.Uuid
+  assessor2Id     String   @map("assessor2_id") @db.Uuid
+  assessment1Id   String   @map("assessment1_id") @db.Uuid
+  assessment2Id   String   @map("assessment2_id") @db.Uuid
+  studyDate       DateTime @map("study_date") @db.Date
+  domainKappas    Json     @map("domain_kappas")
+  overallKappa    Float    @map("overall_kappa")
+  domainIccs      Json     @map("domain_iccs")
+  agreementPct    Float    @map("agreement_pct")
+  kappaGrade      String   @map("kappa_grade") @db.VarChar(20)
+  requiresRetraining Boolean @default(false) @map("requires_retraining")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("reliability_assessments")
+}
+
+// =============================================
+// 11. LONGITUDINAL FEATURES (Task 9)
+// =============================================
+
+model LongitudinalFeatures {
+  id                    String   @id @default(uuid()) @db.Uuid
+  childId               String   @unique @map("child_id") @db.VarChar(50)
+  computedAt            DateTime @map("computed_at") @db.Timestamptz()
+  assessmentsCount      Int      @map("assessments_count")
+  monthsTracked         Float    @map("months_tracked")
+
+  gmDqVelocity          Float?   @map("gm_dq_velocity")
+  fmDqVelocity          Float?   @map("fm_dq_velocity")
+  lcDqVelocity          Float?   @map("lc_dq_velocity")
+  cogDqVelocity         Float?   @map("cog_dq_velocity")
+  seDqVelocity          Float?   @map("se_dq_velocity")
+  compositeDqVelocity   Float?   @map("composite_dq_velocity")
+
+  stagnationFlag        Boolean  @default(false) @map("stagnation_flag")
+  regressionFlag        Boolean  @default(false) @map("regression_flag")
+  accelerationFlag      Boolean  @default(false) @map("acceleration_flag")
+  engagementImproving   Boolean? @map("engagement_improving")
+
+  lastAssessmentId      String   @map("last_assessment_id") @db.Uuid
+  priorAssessmentId     String?  @map("prior_assessment_id") @db.Uuid
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("longitudinal_features")
+}

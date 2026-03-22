@@ -86,6 +86,12 @@ export interface Child {
     computed_risk_score: number;
     computed_risk_category: string;
     risk_confidence: number;
+    // Demographic fields for bias auditing
+    social_category?: string;
+    maternal_education?: string;
+    paternal_education?: string;
+    household_income_band?: string;
+    ration_card_type?: string;
 }
 
 export interface ContributingDomain {

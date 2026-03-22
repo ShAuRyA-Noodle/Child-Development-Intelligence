@@ -1,0 +1,16 @@
+{
+  "delay_weights": {
+    "gm_delay": 4,
+    "fm_delay": 10,
+    "lc_delay": 5,
+    "cog_delay": 8,
+    "se_delay": 10
+  },
+  "raw_coefficients": {
+    "gm_delay": -0.036452,
+    "fm_delay": 0.095426,
+    "lc_delay": -0.04494,
+    "cog_delay": 0.077555,
+    "se_delay": -0.096162
+  }
+}

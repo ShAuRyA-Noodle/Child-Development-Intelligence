@@ -1,0 +1,120 @@
+{
+  "app": {
+    "title": "ECD Intelligence Platform",
+    "subtitle": "AI-Powered Early Childhood Development"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "children": "Children",
+    "assessments": "Assessments",
+    "alerts": "Alerts",
+    "interventions": "Interventions",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "sync": "Sync"
+  },
+  "dashboard": {
+    "totalChildren": "Total Children",
+    "highRisk": "High Risk",
+    "mediumRisk": "Medium Risk",
+    "lowRisk": "Low Risk",
+    "activeInterventions": "Active Interventions",
+    "followupDone": "Follow-up Done",
+    "improved": "Improved",
+    "riskDistribution": "Risk Distribution",
+    "predictiveInsights": "Predictive Insights",
+    "childProfile": "Child Profile",
+    "interventionEngine": "Intervention Engine",
+    "caregiverEngagement": "Caregiver Engagement",
+    "fieldAnalytics": "Field Analytics",
+    "longitudinalImpact": "Longitudinal Impact",
+    "dataGovernance": "Data Governance"
+  },
+  "assessment": {
+    "newAssessment": "New Assessment",
+    "selectChild": "Select Child",
+    "months": "months",
+    "milestones": "Milestones",
+    "achieved": "Achieved",
+    "delayed": "Delayed",
+    "expected": "Expected",
+    "growthMeasurements": "Growth Measurements",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "muac": "MUAC (cm)",
+    "hemoglobin": "Hemoglobin (g/dL)",
+    "notes": "Notes (optional)",
+    "review": "Review Assessment",
+    "save": "Save Assessment",
+    "saving": "Saving...",
+    "savedOnline": "Synced to server",
+    "savedOffline": "Saved offline — will sync later",
+    "saveFailed": "Save Failed",
+    "tryAgain": "Please try again",
+    "back": "Back",
+    "next": "Next",
+    "checkMilestones": "Check each milestone the child has achieved",
+    "noMilestones": "No milestones expected for this age",
+    "checkBeforeSave": "Check details before saving"
+  },
+  "risk": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "critical": "Critical",
+    "riskScore": "Risk Score",
+    "confidence": "Confidence",
+    "contributingDomains": "Contributing Domains"
+  },
+  "domains": {
+    "grossMotor": "Gross Motor",
+    "fineMotor": "Fine Motor",
+    "language": "Language & Communication",
+    "cognitive": "Cognitive",
+    "socialEmotional": "Social-Emotional"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "acknowledge": "Acknowledge",
+    "resolve": "Resolve",
+    "escalate": "Escalate",
+    "p1": "Critical",
+    "p2": "High",
+    "p3": "Medium",
+    "noAlerts": "No alerts"
+  },
+  "sync": {
+    "status": "Sync Status",
+    "lastSync": "Last Sync",
+    "pending": "Pending",
+    "syncing": "Syncing...",
+    "synced": "Synced",
+    "offline": "Offline",
+    "error": "Sync Error",
+    "syncNow": "Sync Now",
+    "online": "Online",
+    "offlineMode": "Offline Mode"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "all": "All"
+  },
+  "roles": {
+    "aww": "AWW Worker",
+    "supervisor": "Supervisor",
+    "cdpo": "CDPO",
+    "stateAdmin": "State Admin",
+    "healthWorker": "Health Worker"
+  }
+}

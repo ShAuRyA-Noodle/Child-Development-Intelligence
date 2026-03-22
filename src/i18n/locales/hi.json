@@ -1,0 +1,120 @@
+{
+  "app": {
+    "title": "ECD इंटेलिजेंस प्लेटफ़ॉर्म",
+    "subtitle": "AI-संचालित प्रारंभिक बाल विकास"
+  },
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "children": "बच्चे",
+    "assessments": "मूल्यांकन",
+    "alerts": "अलर्ट",
+    "interventions": "हस्तक्षेप",
+    "analytics": "विश्लेषण",
+    "settings": "सेटिंग्स",
+    "sync": "सिंक"
+  },
+  "dashboard": {
+    "totalChildren": "कुल बच्चे",
+    "highRisk": "उच्च जोखिम",
+    "mediumRisk": "मध्यम जोखिम",
+    "lowRisk": "कम जोखिम",
+    "activeInterventions": "सक्रिय हस्तक्षेप",
+    "followupDone": "फ़ॉलो-अप पूर्ण",
+    "improved": "सुधार हुआ",
+    "riskDistribution": "जोखिम वितरण",
+    "predictiveInsights": "भविष्यवाणी अंतर्दृष्टि",
+    "childProfile": "बाल प्रोफ़ाइल",
+    "interventionEngine": "हस्तक्षेप इंजन",
+    "caregiverEngagement": "देखभालकर्ता सहभागिता",
+    "fieldAnalytics": "क्षेत्र विश्लेषण",
+    "longitudinalImpact": "दीर्घकालिक प्रभाव",
+    "dataGovernance": "डेटा शासन"
+  },
+  "assessment": {
+    "newAssessment": "नया मूल्यांकन",
+    "selectChild": "बच्चा चुनें",
+    "months": "महीने",
+    "milestones": "मील का पत्थर",
+    "achieved": "हासिल किया",
+    "delayed": "देरी",
+    "expected": "अपेक्षित",
+    "growthMeasurements": "विकास माप",
+    "weight": "वज़न (किलो)",
+    "height": "ऊँचाई (सेमी)",
+    "muac": "MUAC (सेमी)",
+    "hemoglobin": "हीमोग्लोबिन (ग्रा/डीएल)",
+    "notes": "नोट्स (वैकल्पिक)",
+    "review": "मूल्यांकन समीक्षा",
+    "save": "मूल्यांकन सहेजें",
+    "saving": "सहेज रहा है...",
+    "savedOnline": "सर्वर पर सिंक किया गया",
+    "savedOffline": "ऑफ़लाइन सहेजा — बाद में सिंक होगा",
+    "saveFailed": "सहेजना विफल",
+    "tryAgain": "कृपया पुनः प्रयास करें",
+    "back": "वापस",
+    "next": "अगला",
+    "checkMilestones": "बच्चे द्वारा हासिल किया गया प्रत्येक मील का पत्थर चेक करें",
+    "noMilestones": "इस उम्र के लिए कोई मील का पत्थर नहीं",
+    "checkBeforeSave": "सहेजने से पहले विवरण जांचें"
+  },
+  "risk": {
+    "high": "उच्च",
+    "medium": "मध्यम",
+    "low": "कम",
+    "critical": "गंभीर",
+    "riskScore": "जोखिम स्कोर",
+    "confidence": "विश्वास",
+    "contributingDomains": "योगदान करने वाले क्षेत्र"
+  },
+  "domains": {
+    "grossMotor": "स्थूल मोटर",
+    "fineMotor": "सूक्ष्म मोटर",
+    "language": "भाषा और संवाद",
+    "cognitive": "संज्ञानात्मक",
+    "socialEmotional": "सामाजिक-भावनात्मक"
+  },
+  "alerts": {
+    "title": "अलर्ट",
+    "acknowledge": "स्वीकार करें",
+    "resolve": "समाधान करें",
+    "escalate": "एस्केलेट करें",
+    "p1": "गंभीर",
+    "p2": "उच्च",
+    "p3": "मध्यम",
+    "noAlerts": "कोई अलर्ट नहीं"
+  },
+  "sync": {
+    "status": "सिंक स्थिति",
+    "lastSync": "अंतिम सिंक",
+    "pending": "लंबित",
+    "syncing": "सिंक हो रहा है...",
+    "synced": "सिंक हो गया",
+    "offline": "ऑफ़लाइन",
+    "error": "सिंक त्रुटि",
+    "syncNow": "अभी सिंक करें",
+    "online": "ऑनलाइन",
+    "offlineMode": "ऑफ़लाइन मोड"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "retry": "पुनः प्रयास",
+    "cancel": "रद्द करें",
+    "confirm": "पुष्टि करें",
+    "save": "सहेजें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "view": "देखें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "export": "निर्यात",
+    "all": "सभी"
+  },
+  "roles": {
+    "aww": "AWW कार्यकर्ता",
+    "supervisor": "पर्यवेक्षक",
+    "cdpo": "CDPO",
+    "stateAdmin": "राज्य प्रशासक",
+    "healthWorker": "स्वास्थ्य कार्यकर्ता"
+  }
+}

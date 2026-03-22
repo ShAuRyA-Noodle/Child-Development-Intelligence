@@ -1,0 +1,120 @@
+{
+  "app": {
+    "title": "ECD ఇంటెలిజెన్స్ ప్లాట్‌ఫారమ్",
+    "subtitle": "AI-ఆధారిత ప్రారంభ బాల్య అభివృద్ధి"
+  },
+  "nav": {
+    "dashboard": "డ్యాష్‌బోర్డ్",
+    "children": "పిల్లలు",
+    "assessments": "అసెస్‌మెంట్లు",
+    "alerts": "హెచ్చరికలు",
+    "interventions": "జోక్యాలు",
+    "analytics": "విశ్లేషణలు",
+    "settings": "సెట్టింగ్‌లు",
+    "sync": "సింక్"
+  },
+  "dashboard": {
+    "totalChildren": "మొత్తం పిల్లలు",
+    "highRisk": "అధిక ప్రమాదం",
+    "mediumRisk": "మధ్యస్థ ప్రమాదం",
+    "lowRisk": "తక్కువ ప్రమాదం",
+    "activeInterventions": "సక్రియ జోక్యాలు",
+    "followupDone": "ఫాలో-అప్ పూర్తి",
+    "improved": "మెరుగుపడింది",
+    "riskDistribution": "ప్రమాద పంపిణీ",
+    "predictiveInsights": "అంచనా అంతర్దృష్టులు",
+    "childProfile": "పిల్లల ప్రొఫైల్",
+    "interventionEngine": "జోక్యం ఇంజిన్",
+    "caregiverEngagement": "సంరక్షకుల భాగస్వామ్యం",
+    "fieldAnalytics": "క్షేత్ర విశ్లేషణలు",
+    "longitudinalImpact": "దీర్ఘకాలిక ప్రభావం",
+    "dataGovernance": "డేటా పాలన"
+  },
+  "assessment": {
+    "newAssessment": "కొత్త అసెస్‌మెంట్",
+    "selectChild": "పిల్లవాడిని ఎంచుకోండి",
+    "months": "నెలలు",
+    "milestones": "మైలురాళ్ళు",
+    "achieved": "సాధించింది",
+    "delayed": "ఆలస్యం",
+    "expected": "ఆశించబడింది",
+    "growthMeasurements": "పెరుగుదల కొలతలు",
+    "weight": "బరువు (కిలో)",
+    "height": "ఎత్తు (సెం.మీ)",
+    "muac": "MUAC (సెం.మీ)",
+    "hemoglobin": "హీమోగ్లోబిన్ (గ్రా/డీఎల్)",
+    "notes": "గమనికలు (ఐచ్ఛికం)",
+    "review": "అసెస్‌మెంట్ సమీక్ష",
+    "save": "అసెస్‌మెంట్ సేవ్ చేయండి",
+    "saving": "సేవ్ అవుతోంది...",
+    "savedOnline": "సర్వర్‌కు సింక్ చేయబడింది",
+    "savedOffline": "ఆఫ్‌లైన్ సేవ్ — తర్వాత సింక్ అవుతుంది",
+    "saveFailed": "సేవ్ విఫలమైంది",
+    "tryAgain": "దయచేసి మళ్ళీ ప్రయత్నించండి",
+    "back": "వెనక్కి",
+    "next": "తదుపరి",
+    "checkMilestones": "పిల్లవాడు సాధించిన ప్రతి మైలురాయిని తనిఖీ చేయండి",
+    "noMilestones": "ఈ వయస్సుకు మైలురాళ్ళు లేవు",
+    "checkBeforeSave": "సేవ్ చేయడానికి ముందు వివరాలు తనిఖీ చేయండి"
+  },
+  "risk": {
+    "high": "అధికం",
+    "medium": "మధ్యస్థం",
+    "low": "తక్కువ",
+    "critical": "క్లిష్టమైన",
+    "riskScore": "ప్రమాద స్కోర్",
+    "confidence": "విశ్వాసం",
+    "contributingDomains": "కారణ డొమైన్లు"
+  },
+  "domains": {
+    "grossMotor": "స్థూల మోటార్",
+    "fineMotor": "సూక్ష్మ మోటార్",
+    "language": "భాష & కమ్యూనికేషన్",
+    "cognitive": "అభిజ్ఞా",
+    "socialEmotional": "సామాజిక-భావోద్వేగ"
+  },
+  "alerts": {
+    "title": "హెచ్చరికలు",
+    "acknowledge": "గుర్తించండి",
+    "resolve": "పరిష్కరించండి",
+    "escalate": "ఎస్కలేట్",
+    "p1": "క్లిష్టమైన",
+    "p2": "అధికం",
+    "p3": "మధ్యస్థం",
+    "noAlerts": "హెచ్చరికలు లేవు"
+  },
+  "sync": {
+    "status": "సింక్ స్థితి",
+    "lastSync": "చివరి సింక్",
+    "pending": "పెండింగ్",
+    "syncing": "సింక్ అవుతోంది...",
+    "synced": "సింక్ అయింది",
+    "offline": "ఆఫ్‌లైన్",
+    "error": "సింక్ లోపం",
+    "syncNow": "ఇప్పుడు సింక్ చేయండి",
+    "online": "ఆన్‌లైన్",
+    "offlineMode": "ఆఫ్‌లైన్ మోడ్"
+  },
+  "common": {
+    "loading": "లోడ్ అవుతోంది...",
+    "error": "లోపం",
+    "retry": "మళ్ళీ ప్రయత్నించండి",
+    "cancel": "రద్దు",
+    "confirm": "నిర్ధారించండి",
+    "save": "సేవ్",
+    "delete": "తొలగించు",
+    "edit": "సవరించు",
+    "view": "చూడండి",
+    "search": "వెతుకు",
+    "filter": "ఫిల్టర్",
+    "export": "ఎగుమతి",
+    "all": "అన్నీ"
+  },
+  "roles": {
+    "aww": "AWW కార్యకర్త",
+    "supervisor": "సూపర్‌వైజర్",
+    "cdpo": "CDPO",
+    "stateAdmin": "రాష్ట్ర అడ్మిన్",
+    "healthWorker": "ఆరోగ్య కార్యకర్త"
+  }
+}
