@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-pydantic>=2.0
+pydantic>=2.13.4
 numpy
 scikit-learn
 xgboost
