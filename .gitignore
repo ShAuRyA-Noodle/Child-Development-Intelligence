@@ -25,9 +25,21 @@ lerna-debug.log*
 # Environment Files
 # =============================
 .env
+.env.*
+*.env
 .env.local
 .env.*.local
 *.local
+
+# Credentials
+*-credentials.json
+service-account*.json
+serviceAccountKey.json
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
 
 # =============================
 # Editor / IDE

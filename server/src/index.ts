@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
@@ -73,7 +73,8 @@ async function buildServer() {
 
   // ─── Global error handler ──────────────────────────────────────────────────
 
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((err, _request, reply) => {
+    const error = err as FastifyError;
     app.log.error(error);
 
     if (error.validation) {
