@@ -1,4 +1,12 @@
 version: 2
+
+# Strategy: keep security updates auto-flowing, but suppress noisy
+# version-update PRs for major bumps. Major upgrades are reviewed and
+# applied manually (they tend to require breaking-change work).
+_ignore_major: &ignore_major
+  - dependency-name: "*"
+    update-types: ["version-update:semver-major"]
+
 updates:
   - package-ecosystem: npm
     directory: /
@@ -9,6 +17,7 @@ updates:
       minor-patch:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
+    ignore: *ignore_major
 
   - package-ecosystem: npm
     directory: /server
@@ -19,6 +28,7 @@ updates:
       minor-patch:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
+    ignore: *ignore_major
 
   - package-ecosystem: pip
     directory: /risk-engine
@@ -29,6 +39,7 @@ updates:
       minor-patch:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
+    ignore: *ignore_major
 
   - package-ecosystem: github-actions
     directory: /
@@ -41,15 +52,18 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    ignore: *ignore_major
 
   - package-ecosystem: docker
     directory: /server
     schedule:
       interval: weekly
       day: monday
+    ignore: *ignore_major
 
   - package-ecosystem: docker
     directory: /risk-engine
     schedule:
       interval: weekly
       day: monday
+    ignore: *ignore_major
