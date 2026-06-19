@@ -25,7 +25,7 @@ You will receive an acknowledgment within 48 hours. Critical issues are aimed fo
 
 - JWT_SECRET is required at startup; a dev-only fallback is gated behind `NODE_ENV != production` AND `ALLOW_DEV_JWT_FALLBACK=1` so production deploys cannot silently boot with a hardcoded key.
 - Access tokens expire in 15 minutes; refresh tokens expire in 7 days.
-- Fastify + RBAC middleware on every route; rate limiting on auth endpoints.
+- Fastify authentication on every route; role checks (`requireRole`) on write endpoints and location-scoping (`scopeByLocation` / `assertChildInScope`) on child-PII reads and writes, including the offline sync endpoints. Rate limiting on auth endpoints.
 - CodeQL `security-extended` on every push, PR, and weekly schedule.
 - Dependabot weekly security + version updates with `npm overrides` to pin transitive deps to advisory-clean versions.
 - Branch protection on `main`: required CodeQL status checks, linear history, no force-push, no deletion, conversation resolution required.

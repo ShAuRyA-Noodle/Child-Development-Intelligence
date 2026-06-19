@@ -28,14 +28,27 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS middleware — allow all origins for development, restrict in production
+# CORS middleware — driven by an env allowlist. Never use a wildcard together
+# with credentials. Defaults to the local frontend dev origin.
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
+# Only send credentials when origins are explicit (never with "*").
+ALLOW_CREDENTIALS = "*" not in ALLOWED_ORIGINS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# TODO: add internal auth on the scoring routers (e.g. a shared-secret header
+# gated by an INTERNAL_API_KEY env var) so only the backend can reach them.
+# The scoring engine currently trusts any caller that can reach it on the network.
 
 # Register routers
 app.include_router(scoring.router)

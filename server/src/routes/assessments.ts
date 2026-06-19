@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
-import { requireRole } from '../middleware/rbac.js';
+import { requireRole, assertChildInScope, ChildOutOfScopeError } from '../middleware/rbac.js';
 import { assessmentCreateSchema } from '../utils/validation.js';
 import { enqueueRiskScoring } from '../jobs/queue.js';
 
@@ -14,6 +14,16 @@ export async function assessmentRoutes(app: FastifyInstance): Promise<void> {
 
     if (!child_id) {
       return reply.status(400).send({ error: 'Validation Error', message: 'child_id query parameter is required' });
+    }
+
+    // Scope check: 404 (not 403) if the child is out of the caller's scope
+    try {
+      await assertChildInScope(request, child_id);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        return reply.status(404).send({ error: 'Not Found', message: err.message });
+      }
+      throw err;
     }
 
     const pageNum = Math.max(1, parseInt(page ?? '1', 10));
@@ -71,6 +81,16 @@ export async function assessmentRoutes(app: FastifyInstance): Promise<void> {
 
     if (!assessment) {
       return reply.status(404).send({ error: 'Not Found', message: `Assessment ${id} not found` });
+    }
+
+    // Scope check on the owning child: 404 (not 403) if out of the caller's scope
+    try {
+      await assertChildInScope(request, assessment.childId);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        return reply.status(404).send({ error: 'Not Found', message: `Assessment ${id} not found` });
+      }
+      throw err;
     }
 
     return reply.send({ data: assessment });

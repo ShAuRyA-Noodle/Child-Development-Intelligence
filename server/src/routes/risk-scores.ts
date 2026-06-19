@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
-import { scopeByLocation } from '../middleware/rbac.js';
+import { scopeByLocation, assertChildInScope, ChildOutOfScopeError } from '../middleware/rbac.js';
 
 const prisma = new PrismaClient();
 
@@ -63,6 +63,16 @@ export async function riskScoreRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/v1/risk-scores/:child_id — risk score for a child with contributing domains
   app.get('/api/v1/risk-scores/:child_id', { preHandler: [authenticate] }, async (request, reply) => {
     const { child_id } = request.params as { child_id: string };
+
+    // Scope check: 404 (not 403) if the child is out of the caller's scope
+    try {
+      await assertChildInScope(request, child_id);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        return reply.status(404).send({ error: 'Not Found', message: `No risk profile found for child ${child_id}` });
+      }
+      throw err;
+    }
 
     const riskProfile = await prisma.riskProfile.findFirst({
       where: { childId: child_id },

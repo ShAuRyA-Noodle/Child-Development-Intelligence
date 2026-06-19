@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
+import { requireRole, assertChildInScope, ChildOutOfScopeError } from '../middleware/rbac.js';
 import {
   interventionCreateSchema,
   interventionUpdateSchema,
@@ -16,6 +17,16 @@ export async function interventionRoutes(app: FastifyInstance): Promise<void> {
 
     if (!child_id) {
       return reply.status(400).send({ error: 'Validation Error', message: 'child_id query parameter is required' });
+    }
+
+    // Scope check: 404 (not 403) if the child is out of the caller's scope
+    try {
+      await assertChildInScope(request, child_id);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        return reply.status(404).send({ error: 'Not Found', message: err.message });
+      }
+      throw err;
     }
 
     const pageNum = Math.max(1, parseInt(page ?? '1', 10));
@@ -60,8 +71,8 @@ export async function interventionRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
-  // POST /api/v1/interventions — create intervention plan
-  app.post('/api/v1/interventions', { preHandler: [authenticate] }, async (request, reply) => {
+  // POST /api/v1/interventions — create intervention plan (AWW only)
+  app.post('/api/v1/interventions', { preHandler: [authenticate, requireRole('AWW')] }, async (request, reply) => {
     const parsed = interventionCreateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -72,10 +83,14 @@ export async function interventionRoutes(app: FastifyInstance): Promise<void> {
 
     const data = parsed.data;
 
-    // Verify child exists
-    const child = await prisma.child.findUnique({ where: { childId: data.childId } });
-    if (!child) {
-      return reply.status(404).send({ error: 'Not Found', message: `Child ${data.childId} not found` });
+    // Scope check: 404 (not 403) if the child is out of the caller's scope
+    try {
+      await assertChildInScope(request, data.childId);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        return reply.status(404).send({ error: 'Not Found', message: err.message });
+      }
+      throw err;
     }
 
     const plan = await prisma.interventionPlan.create({
@@ -117,8 +132,8 @@ export async function interventionRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(201).send({ data: plan });
   });
 
-  // PATCH /api/v1/interventions/:id — update plan status
-  app.patch('/api/v1/interventions/:id', { preHandler: [authenticate] }, async (request, reply) => {
+  // PATCH /api/v1/interventions/:id — update plan status (AWW only)
+  app.patch('/api/v1/interventions/:id', { preHandler: [authenticate, requireRole('AWW')] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const parsed = interventionUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -131,6 +146,16 @@ export async function interventionRoutes(app: FastifyInstance): Promise<void> {
     const existing = await prisma.interventionPlan.findUnique({ where: { planId: id } });
     if (!existing) {
       return reply.status(404).send({ error: 'Not Found', message: `Intervention plan ${id} not found` });
+    }
+
+    // Scope check on the owning child: 404 (not 403) if out of the caller's scope
+    try {
+      await assertChildInScope(request, existing.childId);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        return reply.status(404).send({ error: 'Not Found', message: `Intervention plan ${id} not found` });
+      }
+      throw err;
     }
 
     const updateData: Record<string, unknown> = {};
@@ -160,8 +185,8 @@ export async function interventionRoutes(app: FastifyInstance): Promise<void> {
     return reply.send({ data: plan });
   });
 
-  // POST /api/v1/interventions/:id/compliance — log activity compliance
-  app.post('/api/v1/interventions/:id/compliance', { preHandler: [authenticate] }, async (request, reply) => {
+  // POST /api/v1/interventions/:id/compliance — log activity compliance (AWW only)
+  app.post('/api/v1/interventions/:id/compliance', { preHandler: [authenticate, requireRole('AWW')] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const parsed = complianceCreateSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -175,6 +200,16 @@ export async function interventionRoutes(app: FastifyInstance): Promise<void> {
     const plan = await prisma.interventionPlan.findUnique({ where: { planId: id } });
     if (!plan) {
       return reply.status(404).send({ error: 'Not Found', message: `Intervention plan ${id} not found` });
+    }
+
+    // Scope check on the owning child: 404 (not 403) if out of the caller's scope
+    try {
+      await assertChildInScope(request, plan.childId);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        return reply.status(404).send({ error: 'Not Found', message: `Intervention plan ${id} not found` });
+      }
+      throw err;
     }
 
     const compliance = await prisma.interventionCompliance.create({

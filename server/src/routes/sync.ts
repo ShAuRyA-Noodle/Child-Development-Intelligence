@@ -1,7 +1,12 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
+import { scopeByLocation, isAwcInScope, assertChildInScope, ChildOutOfScopeError } from '../middleware/rbac.js';
 import { syncMutationSchema, syncPullSchema } from '../utils/validation.js';
+
+// Roles permitted to push offline mutations (write child PII). Mirrors the
+// requireRole('AWW') guards on the REST write routes (children/assessments/interventions).
+const SYNC_WRITE_ROLES = ['AWW'] as const;
 
 const prisma = new PrismaClient();
 
@@ -92,7 +97,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
       // Apply mutation
       try {
-        await applyMutation(mutation.tableName, mutation.operation, mutation.payload as Record<string, unknown>);
+        await applyMutation(request, mutation.tableName, mutation.operation, mutation.payload as Record<string, unknown>);
 
         await prisma.syncMutation.upsert({
           where: { mutationId: mutation.mutationId },
@@ -116,7 +121,33 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
         recordsPushed++;
       } catch (err) {
-        console.error(`Failed to apply mutation ${mutation.mutationId}:`, (err as Error).message);
+        // Reject (do not apply) out-of-scope / unauthorized or failed mutations.
+        const isAuthz = err instanceof SyncAuthorizationError;
+        if (isAuthz) {
+          console.warn(`Rejected unauthorized mutation ${mutation.mutationId}:`, (err as Error).message);
+        } else {
+          console.error(`Failed to apply mutation ${mutation.mutationId}:`, (err as Error).message);
+        }
+        // Persist the rejection so the mutation is not silently re-attempted as applied.
+        await prisma.syncMutation.upsert({
+          where: { mutationId: mutation.mutationId },
+          update: {
+            applied: false,
+            serverTs: new Date(),
+            conflictResolution: isAuthz ? 'rejected_unauthorized' : 'error',
+          },
+          create: {
+            mutationId: mutation.mutationId,
+            childId: mutation.childId,
+            tableName: mutation.tableName,
+            operation: mutation.operation,
+            payload: mutation.payload as Prisma.InputJsonValue,
+            clientTs,
+            serverTs: new Date(),
+            applied: false,
+            conflictResolution: isAuthz ? 'rejected_unauthorized' : 'error',
+          },
+        });
         conflictDetails.push({
           mutationId: mutation.mutationId,
           reason: (err as Error).message,
@@ -127,7 +158,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
     // Pull server changes since lastSyncTs
     let serverChanges: Record<string, unknown[]> = {};
     if (lastSyncTs) {
-      serverChanges = await pullChangesSince(new Date(lastSyncTs), request.userContext.user_id);
+      serverChanges = await pullChangesSince(new Date(lastSyncTs), request);
     }
 
     const recordsPulled = Object.values(serverChanges).reduce((sum, arr) => sum + arr.length, 0);
@@ -167,7 +198,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const since = new Date(parsed.data.since);
-    const changes = await pullChangesSince(since, request.userContext.user_id, parsed.data.tables);
+    const changes = await pullChangesSince(since, request, parsed.data.tables);
 
     const totalRecords = Object.values(changes).reduce((sum, arr) => sum + arr.length, 0);
 
@@ -213,11 +244,54 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
 // ─── Apply a single mutation to the database ────────────────────────────────────
 
+/** Authorization failure during sync (out-of-scope target or insufficient role). */
+class SyncAuthorizationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SyncAuthorizationError';
+  }
+}
+
 async function applyMutation(
+  request: FastifyRequest,
   tableName: string,
   operation: string,
   payload: Record<string, unknown>
 ): Promise<void> {
+  // (b) Only roles allowed to write child PII on the REST routes may push mutations.
+  const role = request.userContext.role;
+  if (!SYNC_WRITE_ROLES.includes(role as (typeof SYNC_WRITE_ROLES)[number])) {
+    throw new SyncAuthorizationError(
+      `Role '${role}' is not permitted to push offline mutations`
+    );
+  }
+
+  // (a) Assert a child id is within the caller's scope; throws on out-of-scope/missing.
+  const assertScoped = async (childId: string): Promise<void> => {
+    try {
+      await assertChildInScope(request, childId);
+    } catch (err) {
+      if (err instanceof ChildOutOfScopeError) {
+        throw new SyncAuthorizationError(`Child ${childId} is outside caller scope`);
+      }
+      throw err;
+    }
+  };
+
+  // (c) Resolve a target awcId for an INSERT: reject client-supplied out-of-scope
+  // values, default to the caller's own location when none supplied.
+  const resolveAwcId = async (suppliedAwcId: unknown): Promise<number | undefined> => {
+    if (suppliedAwcId !== undefined && suppliedAwcId !== null) {
+      const awcId = suppliedAwcId as number;
+      if (!(await isAwcInScope(request, awcId))) {
+        throw new SyncAuthorizationError(`awcId ${awcId} is outside caller scope`);
+      }
+      return awcId;
+    }
+    // Fall back to the caller's first assigned location (mirrors REST POST /children).
+    return request.userContext.location_ids[0];
+  };
+
   switch (tableName) {
     case 'children': {
       if (operation === 'INSERT') {
@@ -232,11 +306,19 @@ async function applyMutation(
             birthWeightKg: payload.birthWeightKg as number | undefined,
             birthStatus: payload.birthStatus as string | undefined,
             caregiverId: payload.caregiverId as string | undefined,
-            awcId: payload.awcId as number | undefined,
+            awcId: await resolveAwcId(payload.awcId),
           },
         });
       } else if (operation === 'UPDATE') {
-        const { childId, ...updateData } = payload;
+        const { childId, awcId, ...updateData } = payload;
+        await assertScoped(childId as string);
+        // (c) reject moving the child to an out-of-scope AWC; otherwise keep the change.
+        if (awcId !== undefined && awcId !== null) {
+          if (!(await isAwcInScope(request, awcId as number))) {
+            throw new SyncAuthorizationError(`awcId ${awcId} is outside caller scope`);
+          }
+          updateData.awcId = awcId;
+        }
         if (updateData.dob && typeof updateData.dob === 'string') {
           updateData.dob = new Date(updateData.dob);
         }
@@ -245,6 +327,7 @@ async function applyMutation(
           data: updateData,
         });
       } else if (operation === 'DELETE') {
+        await assertScoped(payload.childId as string);
         await prisma.child.update({
           where: { childId: payload.childId as string },
           data: { isActive: false },
@@ -255,10 +338,12 @@ async function applyMutation(
 
     case 'assessments': {
       if (operation === 'INSERT') {
+        await assertScoped(payload.childId as string);
         await prisma.assessment.create({
           data: {
             childId: payload.childId as string,
-            assessorId: payload.assessorId as string | undefined,
+            // (c) never trust a client-supplied assessorId — bind to the caller.
+            assessorId: request.userContext.user_id,
             assessmentDate: new Date(payload.assessmentDate as string),
             assessmentCycle: payload.assessmentCycle as string | undefined,
             ageAtAssessmentMonths: payload.ageAtAssessmentMonths as number,
@@ -291,6 +376,7 @@ async function applyMutation(
 
     case 'referrals': {
       if (operation === 'INSERT') {
+        await assertScoped(payload.childId as string);
         await prisma.referral.create({
           data: {
             childId: payload.childId as string,
@@ -302,6 +388,15 @@ async function applyMutation(
         });
       } else if (operation === 'UPDATE') {
         const { referralId, ...updateData } = payload;
+        // Resolve the owning child and scope-check before mutating.
+        const referral = await prisma.referral.findUnique({
+          where: { referralId: referralId as string },
+          select: { childId: true },
+        });
+        if (!referral || !referral.childId) {
+          throw new SyncAuthorizationError(`Referral ${referralId} not found in scope`);
+        }
+        await assertScoped(referral.childId);
         await prisma.referral.update({
           where: { referralId: referralId as string },
           data: updateData,
@@ -319,47 +414,53 @@ async function applyMutation(
 
 async function pullChangesSince(
   since: Date,
-  _userId: string,
+  request: FastifyRequest,
   tables?: string[]
 ): Promise<Record<string, unknown[]>> {
   const changes: Record<string, unknown[]> = {};
+
+  // Resolve the caller's location scope. Every query below is constrained to it
+  // so a user can never pull children/PII outside their assigned locations.
+  const { childFilter } = await scopeByLocation(request);
+  // Constrain child-owned records via their parent child relation.
+  const childScope = { child: { is: { ...childFilter } } };
 
   const tablesToSync = tables ?? ['children', 'assessments', 'risk_profiles', 'intelligent_alerts', 'intervention_plans', 'referrals'];
 
   if (tablesToSync.includes('children')) {
     changes.children = await prisma.child.findMany({
-      where: { updatedAt: { gt: since } },
+      where: { ...childFilter, updatedAt: { gt: since } },
     });
   }
 
   if (tablesToSync.includes('assessments')) {
     changes.assessments = await prisma.assessment.findMany({
-      where: { createdAt: { gt: since } },
+      where: { ...childScope, createdAt: { gt: since } },
     });
   }
 
   if (tablesToSync.includes('risk_profiles')) {
     changes.risk_profiles = await prisma.riskProfile.findMany({
-      where: { calculationDate: { gt: since } },
+      where: { ...childScope, calculationDate: { gt: since } },
     });
   }
 
   if (tablesToSync.includes('intelligent_alerts')) {
     changes.intelligent_alerts = await prisma.intelligentAlert.findMany({
-      where: { generatedAt: { gt: since } },
+      where: { ...childScope, generatedAt: { gt: since } },
     });
   }
 
   if (tablesToSync.includes('intervention_plans')) {
     changes.intervention_plans = await prisma.interventionPlan.findMany({
-      where: { createdAt: { gt: since } },
+      where: { ...childScope, createdAt: { gt: since } },
       include: { activities: true },
     });
   }
 
   if (tablesToSync.includes('referrals')) {
     changes.referrals = await prisma.referral.findMany({
-      where: { referralDate: { gt: since } },
+      where: { ...childScope, referralDate: { gt: since } },
     });
   }
 

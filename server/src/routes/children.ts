@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
-import { requireRole, scopeByLocation } from '../middleware/rbac.js';
+import { requireRole, scopeByLocation, isAwcInScope } from '../middleware/rbac.js';
 import { childCreateSchema, childUpdateSchema } from '../utils/validation.js';
 
 const prisma = new PrismaClient();
@@ -93,11 +93,26 @@ export async function childrenRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/v1/children/:id', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    const child = await prisma.child.findUnique({
-      where: { childId: id },
-      include: {
-        awc: true,
-        caregiver: true,
+    // Scope/ownership check: 404 (not 403) if child is out of the caller's scope
+    const { childFilter } = await scopeByLocation(request);
+
+    const child = await prisma.child.findFirst({
+      where: { childId: id, ...childFilter },
+      select: {
+        childId: true,
+        firstName: true,
+        lastName: true,
+        gender: true,
+        dob: true,
+        birthWeightKg: true,
+        birthStatus: true,
+        isActive: true,
+        awcId: true,
+        socialCategory: true,
+        createdAt: true,
+        updatedAt: true,
+        awc: { select: { name: true, code: true } },
+        caregiver: { select: { primaryName: true, relation: true } },
         assessments: {
           orderBy: { assessmentDate: 'desc' },
           take: 1,
@@ -187,10 +202,10 @@ export async function childrenRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  // PATCH /api/v1/children/:id — update child record
+  // PATCH /api/v1/children/:id — update child record (AWW only)
   app.patch(
     '/api/v1/children/:id',
-    { preHandler: [authenticate] },
+    { preHandler: [authenticate, requireRole('AWW')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const parsed = childUpdateSchema.safeParse(request.body);
@@ -201,8 +216,15 @@ export async function childrenRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const existing = await prisma.child.findUnique({ where: { childId: id } });
+      // Scope check: 404 (not 403) if the child is out of the caller's scope
+      const { childFilter } = await scopeByLocation(request);
+      const existing = await prisma.child.findFirst({ where: { childId: id, ...childFilter } });
       if (!existing) {
+        return reply.status(404).send({ error: 'Not Found', message: `Child ${id} not found` });
+      }
+
+      // Reject reassigning the child to an AWC outside the caller's scope
+      if (parsed.data.awcId !== undefined && !(await isAwcInScope(request, parsed.data.awcId))) {
         return reply.status(404).send({ error: 'Not Found', message: `Child ${id} not found` });
       }
 

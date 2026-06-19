@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: ecd_platform
       POSTGRES_USER: ecd_admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-ecd_secure_password}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
     ports:
       - "5432:5432"
     volumes:
@@ -49,9 +49,9 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://ecd_admin:${DB_PASSWORD:-ecd_secure_password}@postgres:5432/ecd_platform
+      DATABASE_URL: postgresql://ecd_admin:${DB_PASSWORD:?DB_PASSWORD must be set}@postgres:5432/ecd_platform
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-change_this_in_production_immediately}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_EXPIRY: 15m
       REFRESH_TOKEN_EXPIRY: 7d
       PORT: 3001
@@ -82,7 +82,7 @@ services:
     container_name: ecd-risk-engine
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://ecd_admin:${DB_PASSWORD:-ecd_secure_password}@postgres:5432/ecd_platform
+      DATABASE_URL: postgresql://ecd_admin:${DB_PASSWORD:?DB_PASSWORD must be set}@postgres:5432/ecd_platform
       REDIS_URL: redis://redis:6379
       MODEL_PATH: /app/models
       LOG_LEVEL: info

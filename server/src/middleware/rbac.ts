@@ -81,6 +81,65 @@ export async function scopeByLocation(
 }
 
 /**
+ * Error thrown when a child record is outside the caller's location scope.
+ * Surfaced as a 404 (not 403) to avoid record enumeration.
+ */
+export class ChildOutOfScopeError extends Error {
+  childId: string;
+  constructor(childId: string) {
+    super(`Child ${childId} not found`);
+    this.name = 'ChildOutOfScopeError';
+    this.childId = childId;
+  }
+}
+
+/**
+ * Load a child by id and assert it is within the caller's location scope.
+ *
+ * Returns the child's awcId when in scope; throws {@link ChildOutOfScopeError}
+ * (mapped to 404) when the child does not exist or is out of scope. Callers
+ * should reply 404 so out-of-scope ids are indistinguishable from missing ones.
+ */
+export async function assertChildInScope(
+  req: FastifyRequest,
+  childId: string
+): Promise<{ awcId: number | null }> {
+  const { childFilter } = await scopeByLocation(req);
+
+  const child = await prisma.child.findFirst({
+    where: { childId, ...childFilter },
+    select: { awcId: true },
+  });
+
+  if (!child) {
+    throw new ChildOutOfScopeError(childId);
+  }
+
+  return child;
+}
+
+/**
+ * True if the given awcId is within the caller's location scope. Used to reject
+ * client-supplied awcId values (e.g. forged sync payloads) that fall outside scope.
+ */
+export async function isAwcInScope(req: FastifyRequest, awcId: number): Promise<boolean> {
+  const { childFilter } = await scopeByLocation(req);
+  const filter = childFilter as { awcId?: number | { in: number[] } };
+
+  // No awcId constraint => full access (e.g. StateAdmin)
+  if (filter.awcId === undefined) {
+    return true;
+  }
+  if (typeof filter.awcId === 'number') {
+    return filter.awcId === awcId;
+  }
+  if (filter.awcId.in) {
+    return filter.awcId.in.includes(awcId);
+  }
+  return false;
+}
+
+/**
  * Recursively resolve all descendant AWC-level location IDs from a set of parent locations.
  */
 async function resolveChildLocations(parentIds: number[]): Promise<number[]> {
