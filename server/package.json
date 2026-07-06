@@ -12,7 +12,7 @@
     "prisma:push": "prisma db push"
   },
   "dependencies": {
-    "fastify": "^5.8.5",
+    "fastify": "^5.10.0",
     "@fastify/cors": "^11.2.0",
     "@fastify/jwt": "^10.1.0",
     "@fastify/rate-limit": "^10.3.0",
@@ -20,7 +20,7 @@
     "prisma": "^5.20.0",
     "bcryptjs": "^2.4.3",
     "zod": "^3.23.8",
-    "bullmq": "^5.79.0",
+    "bullmq": "^5.79.2",
     "ioredis": "^5.11.1",
     "dotenv": "^16.4.5"
   },
@@ -28,7 +28,7 @@
     "typescript": "^5.6.3",
     "@types/node": "^22.20.0",
     "@types/bcryptjs": "^2.4.6",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.0",
     "nodemon": "^3.1.7"
   },
   "overrides": {
