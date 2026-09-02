@@ -12,7 +12,7 @@
     "prisma:push": "prisma db push"
   },
   "dependencies": {
-    "fastify": "^5.8.5",
+    "fastify": "^5.12.1",
     "@fastify/cors": "^11.2.0",
     "@fastify/jwt": "^10.1.0",
     "@fastify/rate-limit": "^10.3.0",
