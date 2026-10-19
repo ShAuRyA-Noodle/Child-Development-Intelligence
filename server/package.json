@@ -12,9 +12,9 @@
     "prisma:push": "prisma db push"
   },
   "dependencies": {
-    "fastify": "^5.8.5",
-    "@fastify/cors": "^11.2.0",
-    "@fastify/jwt": "^10.1.0",
+    "fastify": "^5.12.7",
+    "@fastify/cors": "^11.3.1",
+    "@fastify/jwt": "^10.2.4",
     "@fastify/rate-limit": "^10.3.0",
     "@prisma/client": "^5.20.0",
     "prisma": "^5.20.0",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "typescript": "^5.6.3",
-    "@types/node": "^22.20.0",
+    "@types/node": "^22.20.5",
     "@types/bcryptjs": "^2.4.6",
     "tsx": "^4.22.4",
     "nodemon": "^3.1.7"
